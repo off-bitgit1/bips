@@ -65,51 +65,54 @@ summary, followed by a reference implementation of the CalculateTxHash function.
     scriptPubkeys.
 
     Special case `TXFS_SPECIAL_TEMPLATE` is 4 bytes long, as follows:
-    * &nbsp;1. `TXFS_ALL`
-    * &nbsp;2. `TXFS_INPUTS_TEMPLATE | TXFS_OUTPUTS_ALL`
-    * &nbsp;3. `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
-    * &nbsp;4. `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
+    * 1: `TXFS_ALL`
+    * 2: `TXFS_INPUTS_TEMPLATE | TXFS_OUTPUTS_ALL`
+    * 3: `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
+    * 4: `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
 
   * the `0x00` byte: it is set equal to `TXFS_SPECIAL_ALL`, which means "ALL" and is primarily
     useful to emulate `SIGHASH_ALL` when `OP_TXHASH` is used in combination
     with `OP_CHECKSIGFROMSTACK`.
 
     Special case `TXFS_SPECIAL_ALL` is 4 bytes long, as follows:
-    * &nbsp;1. `TXFS_ALL`
-    * &nbsp;2. `TXFS_INPUTS_ALL | TXFS_OUTPUTS_ALL`
-    * &nbsp;3. `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
-    * &nbsp;4. `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
+    * 1: `TXFS_ALL`
+    * 2: `TXFS_INPUTS_ALL | TXFS_OUTPUTS_ALL`
+    * 3: `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
+    * 4: `TXFS_INOUT_NUMBER | TXFS_INOUT_SELECTION_ALL`
 
 * The first byte of the TxFieldSelector has its 8 bits assigned as follows, from lowest to highest:
-  * &nbsp;1. version (`TXFS_VERSION`)
-  * &nbsp;2. locktime (`TXFS_LOCKTIME`)
-  * &nbsp;3. current input index (`TXFS_CURRENT_INPUT_IDX`)
-  * &nbsp;4. current input control block (or empty) (`TXFS_CURRENT_INPUT_CONTROL_BLOCK`)
-  * &nbsp;5. current input spent script (i.e. witness script or tapscript) (`TXFS_CURRENT_INPUT_SPENTSCRIPT`)
-  * &nbsp;6. current script last `OP_CODESEPARATOR` position (or 0xffffffff)
+  * 1: version (`TXFS_VERSION`)
+  * 2: locktime (`TXFS_LOCKTIME`)
+  * 3: current input index (`TXFS_CURRENT_INPUT_IDX`)
+  * 4: current input control block (or empty) (`TXFS_CURRENT_INPUT_CONTROL_BLOCK`)
+  * 5: current input spent script (i.e. witness script or tapscript) (`TXFS_CURRENT_INPUT_SPENTSCRIPT`)
+  * 6: current script last `OP_CODESEPARATOR` position (or 0xffffffff)
     (`TXFS_CURRENT_INPUT_LAST_CODESEPARATOR_POS`)
-  * &nbsp;7. (unused)
+  * 7: (unused)
+  * 8: `TXFS_CONTROL` (i.e. include TxFieldSelector into hash)
 
-* The last (highest) bit of the first byte (`TXFS_CONTROL`), we will call the
+* The highest bit of the first byte (`TXFS_CONTROL`), we will call the
   "control bit", and it can be used to control the behavior of the opcode. For
   `OP_TXHASH` and `OP_CHECKTXHASHVERIFY`, the control bit is used to determine
   whether the TxFieldSelector itself has to be included in the resulting hash.
   (For potential other uses of the TxFieldSelector (like a hypothetical
   `OP_TX`), this bit can be repurposed.)
 
-* If either "inputs" or "outputs" is set to 1, expect another byte with its 8
-  bits assigning the following variables, from lowest to highest:
+* The second byte will be used to indicate fields from the inputs and outputs.
+  If there is only a single byte present, no information from the inputs and
+  outputs will be committed. Otherwise, of the second byte, the 8 bits are
+  assigned the following variables, from lowest to highest:
   * Specifying which fields of the inputs will be selected:
-    * &nbsp;1. prevouts (`TXFS_INPUTS_PREVOUTS`)
-    * &nbsp;2. sequences (`TXFS_INPUTS_SEQUENCES`)
-    * &nbsp;3. scriptSigs (`TXFS_INPUTS_SCRIPTSIGS`)
-    * &nbsp;4. prevout scriptPubkeys (`TXFS_INPUTS_PREV_SCRIPTPUBKEYS`)
-    * &nbsp;5. prevout values (`TXFS_INPUTS_PREV_VALUED`)
-    * &nbsp;6. taproot annexes (`TXFS_INPUTS_TAPROOT_ANNEXES`)
+    * 1: prevouts (`TXFS_INPUTS_PREVOUTS`)
+    * 2: sequences (`TXFS_INPUTS_SEQUENCES`)
+    * 3: scriptSigs (`TXFS_INPUTS_SCRIPTSIGS`)
+    * 4: prevout scriptPubkeys (`TXFS_INPUTS_PREV_SCRIPTPUBKEYS`)
+    * 5: prevout values (`TXFS_INPUTS_PREV_VALUED`)
+    * 6: taproot annexes (`TXFS_INPUTS_TAPROOT_ANNEXES`)
 
   * Specifying which fields of the outputs will be selected:
-    * &nbsp;7. scriptPubkeys (`TXFS_OUTPUTS_SCRIPTPUBKEYS`)
-    * &nbsp;8. values (`TXFS_OUTPUTS_VALUES`)
+    * 7: scriptPubkeys (`TXFS_OUTPUTS_SCRIPTPUBKEYS`)
+    * 8: values (`TXFS_OUTPUTS_VALUES`)
 
 * We define as follows:
   * `TXFS_ALL = TXFS_VERSION | TXFS_LOCKTIME | TXFS_CURRENT_INPUT_IDX | TXFS_CURRENT_INPUT_CONTROL_BLOCK | TXFS_CURRENT_INPUT_LAST_CODESEPARATOR_POS | TXFS_INPUTS | TXFS_OUTPUTS | TXFS_CONTROL`
@@ -117,65 +120,147 @@ summary, followed by a reference implementation of the CalculateTxHash function.
   * `TXFS_INPUTS_TEMPLATE = TXFS_INPUTS_SEQUENCES | TXFS_INPUTS_SCRIPTSIGS | TXFS_INPUTS_PREV_VALUES | TXFS_INPUTS_TAPROOT_ANNEXES`
   * `TXFS_OUTPUTS_ALL = TXFS_OUTPUTS_SCRIPTPUBKEYS | TXFS_OUTPUTS_VALUES`
 
-For both inputs and then outputs, do the following:
 
-* If the "in/outputs" field is set to 1, another additional byte is expected:
-  * The highest bit (`TXFS_INOUT_NUMBER`) indicates whether the "number of in-/outputs"
-    should be committed to.
+* For both inputs and then outputs, expect an additional byte as follows:
+  * The highest bit (`TXFS_INOUT_NUMBER`) indicates whether the "number of
+    in-/outputs" should be committed to.
   * For the remaining bits, there are three exceptional values:
-    * 0x00 (`TXFS_INOUT_SELECTION_NONE`) means "no in/outputs"
-      (hence only the number of them as `0x80` (`TXFS_INOUT_NUMBER`)).
-    * `0x40` (`TXFS_INOUT_SELECTION_CURRENT`) means "select only the in/output of the current input index"
-      (it is invalid when current index exceeds number of outputs).
+    * 0x00 (`TXFS_INOUT_SELECTION_NONE`) means "no in/outputs" (hence only the
+      number of them as `0x80` (`TXFS_INOUT_NUMBER`)).
+    * `0x40` (`TXFS_INOUT_SELECTION_CURRENT`) means "select only the in/output
+      of the current input index" (it is invalid when current index exceeds
+      number of outputs).
     * `0x3f` (`TXFS_INOUT_SELECTION_ALL`) means "select all in/outputs".
 
   * The second highest bit (`TXFS_INOUT_SELECTION_MODE`) is the "specification mode":
     * Set to 0 it means "leading mode".
     * Set to 1 it means "individual mode".
-  * In "leading mode", the third highest bit (`TXFS_INOUT_SELECTION_SIZE`) is
-    used to indicate the "count size", i.e. the number of bytes will be used to
+
+  * In "leading mode", the third highest bit (`TXFS_INOUT_LEADING_SIZE`) is
+    used to indicate the "index size", i.e. the number of bytes will be used to
     represent the number of in/output.
-    * With "index size" set to 0, the remaining lowest 5 bits of the first byte will
-      be interpreted as the number of leading in/outputs to select.
-    * With "index size" set to 1, the remaining lowest 5 bits of the first byte together with the
-      8 bits of the next byte will be interpreted as the number of leading in/outputs to select.
-  * In "individual mode", the remaining lowest 6 bits of the first byte will be
-    interpreted as `n`, the number of individual in/outputs to select. For each
-    individual input, (at least) one byte is expected, of this byte. The
-    highest bit is used to indicate "absolute or relative" indices.
-    * If the highest bit is set to 0, it is an absolute index. The second
-      highest bit is used to indicate the amount of bytes are used to represent
-      the index.
-      * If the second-highest bit is 0, the remaining 6 bits represent the index to be selected.
-      * If the second-highest bit is 1, the remaining 6 bits, together with the 8 bits of the next
-        byte, represent the index to be selected.
-    * If the highest bit is set to 1, it is a relative index. The second highest bit is used to
-      indicate the sign of the index.
-      * If the second-highest bit is set to 0, the remaining 6 bits represent the positive relative
-        index to be selected.
-      * If the second-highest bit is set to 1, the remaining 6 bits represent the negative relative
-        index to be selected.
+    * With "index size" set to 0, the remaining lowest 5 bits of the first byte
+      will be interpreted as the number of leading in/outputs to select.
+    * With "index size" set to 1, the remaining lowest 5 bits of the first byte
+      together with the 8 bits of the next byte will be interpreted as the
+      number of leading in/outputs to select.
+
+  * In "individual mode", the third highest bit (`TXFS_INOUT_INDIVIDUAL_MODE`)
+    indicates whether we are passing absolute indices (0) or indices relative
+    to the current input (1), the remaining lowest 5 bits will be interpreted
+    as `n`, the number of individual in/outputs follow.
+    * In absolute mode (second highest bit is 0), for each of the `n` indices,
+      at least one extra byte is expected.
+      * If that byte's highest bit is set to 0, the remaining 7 bits represent
+        the absolute index to select.
+      * If that byte's highest bit is set to 1, the remaining 7 bits, together
+        with the next byte's 8 bits represent the absolute index to select.
+    * In relative mode (second highest bit is 1), for each of the `n` indices,
+      at least one extra byte is expected.
+      * If that byte's highest bit is set to 0, the remaining 7 bits represent
+        the relative index in two's complement.
+      * If that byte's highest bit is set to 1, the remaining 7 bits, together
+        with the next byte's 8 bits represent the relative index in two's
+        complement.
+
 
 Effectively, this allows a user to select
 * all in/outputs
 * the current input index
-* the leading in/outputs up to 8192
-* up to 64 individually selected in/outputs
+* the leading in/outputs up to 7936
+* up to 32 individually selected in/outputs
 ** using absolute indices up to 16384
-** using indices relative to the current input index from -64 to +64.
+** using indices relative to the current input index from -8191 to +8192.
 
 The TxFieldSelector is invalid when
 * a byte is expected but missing
 * additional unexpected bytes are present
 * index size is set to 1 while not being necessary
-* a leading number of individual index is selected out of bounds of the in/outputs
+* a leading number or individual index is selected out of bounds of the in/outputs
 * individual indices are duplicated or not in increasing order
+* single relative index of +0, which could be just `TXFS_INOUT_SELECTION_CURRENT`
+* input or output fields bits are set, but no inputs or outputs are selected
 
 These limitations are to avoid potential TxFieldSelector malleability. It is
 however allowed to use leading mode where it could be "all". This
 is important to allow for optional addition of extra inputs or outputs.
 
 //TODO(stevenroose) should we disallow individual that could be leading?
+
+
+### Visualization
+
+* first byte
+
+```
+1 0 1 1 1 1 1 1
+| | | | | | | ^ version
+| | | | | | ^ locktime
+| | | | | ^ current input index
+| | | | ^ current input control block
+| | | ^ current input spend script
+| | ^ current script last OP_CODESEPARATOR
+| ^ currently unused
+^ control bit (ie. include TXFS in hash)
+```
+
+* second byte
+
+```
+ v outputs
+<-> <---------> inputs
+1 1 1 1 1 1 1 1
+| | | | | | | ^ prevouts
+| | | | | | ^ sequences
+| | | | | ^ scriptSigs
+| | | | ^ prevout scriptPubkeys
+| | | ^ prevout values
+| | ^ taproot annexes
+| ^ scriptPubkeys
+^ values
+```
+
+* in/output selector byte
+
+"only the first 3"
+```
+1 0 0 0 0 0 1 1
+| | | <-------> integer 0b00011 == 3
+| | ^ index size 0: single byte
+| ^ leading mode
+^ commit the number of in/outputs
+```
+
+"only the first 257"
+```
+1 0 1 0 0 0 0 1  0 0 0 0 0 0 0 1
+| | | <------------------------> integer 0b00001 00000001 == 257
+| | ^ index size 1: two bytes
+| ^ leading mode
+^ commit the number of in/outputs
+```
+
+"only indices 0 and 2"
+```
+0 1 0 0 0 0 1 0  0 0 0 0 0 0 0 1  0 0 0 0 0 0 1 1
+| | | |                           <--------------> second idx: 3
+| | | |          <--------------> first idx: 1
+| | | | <-----> selection count: 0b10 == 2
+| | | ^ index size 0: single byte per index
+| | ^ absolute index
+| ^ individual mode
+^ don't commit the number of in/outputs
+```
+
+* total example
+
+```
+bf ff c2 01 03 83
+ |  |           ^ commit number of outputs + leading 3 outputs
+ |  | <------> commit number of inputs + inputs at indices 1 and 3
+ |  ^ all input and output fields
+ ^ all regular fields, except for the unused one
+```
 
 
 ## Resource limits
@@ -195,9 +280,10 @@ is important to allow for optional addition of extra inputs or outputs.
   future addition of byte manipulation opcodes like `OP_CAT`, an additional
   cost is specified per TransactionHash execution. Using the same validation
   budget ("sigops budget") introduced in BIP-0342, each TransactionHash
-  decreases the validation budget by 10. If this brings the budget below zero,
+  decreases the validation budget by 15. If this brings the budget below zero,
   the script fails immediately.<br>The following considerations should be made:
-  * All fields that can be of arbitrary size are cachable as TransactionHash always hashes their hashed values.
+  * All fields that can be of arbitrary size are cachable as TransactionHash
+    always hashes their hashed values.
   * In "individual mode", a user can at most commit 32 inputs or outputs,
     which we don't consider excessive for potential repeated use.
   * In "leading mode", a caching strategy can be used where the SHA256 context

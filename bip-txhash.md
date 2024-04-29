@@ -172,20 +172,13 @@ Effectively, this allows a user to select
 ** using absolute indices up to 16384
 ** using indices relative to the current input index from -8191 to +8192.
 
-The TxFieldSelector is invalid when
-* a byte is expected but missing
-* additional unexpected bytes are present
-* index size is set to 1 while not being necessary
-* a leading number or individual index is selected out of bounds of the in/outputs
-* individual indices are duplicated or not in increasing order
-* single relative index of +0, which could be just `TXFS_INOUT_SELECTION_CURRENT`
-* input or output fields bits are set, but no inputs or outputs are selected
+### TxFieldSelector malleability
 
-These limitations are to avoid potential TxFieldSelector malleability. It is
-however allowed to use leading mode where it could be "all". This
-is important to allow for optional addition of extra inputs or outputs.
+It is possible to represent the same selected data using multiple different
+TxFieldSelectors. For this reason, users are strongly advised to always set the
+`TXFS_CONTROL` that commits to the TxFieldSelector that was used to get the
+hash.
 
-//TODO(stevenroose) should we disallow individual that could be leading?
 
 
 ### Visualization

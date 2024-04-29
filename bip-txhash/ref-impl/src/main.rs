@@ -102,9 +102,6 @@ fn parse_inout_selection(
     let selection = first & (0xff ^ TXFS_INOUT_NUMBER);
 
     let selected = if selection == TXFS_INOUT_SELECTION_NONE {
-        if !allow_empty && !commit_number {
-            return Err("no selection made and also not commiting count");
-        }
         vec![]
     } else if selection == TXFS_INOUT_SELECTION_ALL {
         (0..nb_items).collect()
@@ -118,9 +115,6 @@ fn parse_inout_selection(
         let count = if (selection & TXFS_INOUT_LEADING_SIZE) == 0 {
             (selection & TXFS_INOUT_SELECTION_MASK) as usize
         } else {
-            if (selection & TXFS_INOUT_SELECTION_MASK) == 0 {
-                return Err("non-minimal leading selection");
-            }
             let next_byte = bytes.next().ok_or("second leading selection byte missing")?;
             (((selection & TXFS_INOUT_SELECTION_MASK) as usize) << 8) + next_byte as usize
         };
@@ -133,9 +127,6 @@ fn parse_inout_selection(
         let absolute = (selection & TXFS_INOUT_INDIVIDUAL_MODE) == 0;
 
         let count = (selection & TXFS_INOUT_SELECTION_MASK) as usize;
-        if count == 0 {
-            return Err("can't select 0 in/outputs in individual mode");
-        }
 
         let mut selected = Vec::with_capacity(count as usize);
         for _ in 0..count {
@@ -144,9 +135,6 @@ fn parse_inout_selection(
             let number = if single_byte {
                 first as usize
             } else {
-                if first == 0 {
-                    return Err("unnecessary two-byte index");
-                }
                 let next_byte = bytes.next().ok_or("expected another index byte")?;
                 (((first & (1 << 7)) as usize) << 8) + next_byte as usize
             };
@@ -160,9 +148,6 @@ fn parse_inout_selection(
                     read_i15(number as u16) as isize
                 };
 
-                if rel == 0 && count == 1 {
-                    return Err("not allowed to only have a single relative index of 0");
-                }
                 if rel.is_negative() && rel.abs() > current_input_idx as isize {
                     return Err("relative index out of bounds");
                 }
@@ -259,21 +244,10 @@ pub fn calculate_txhash(
         None => return Ok(sha256::Hash::from_engine(engine)),
     };
 
-    if bytes.peek().is_none() {
-        return Err("in/out field byte set, but no input/outputs selected");
-    }
-
     // Inputs
     let (input_select, commit_number_inputs) = parse_inout_selection(
         &mut bytes, tx.input.len(), current_input_idx, true,
     )?;
-
-    if (inout_fields & TXFS_INPUTS_ALL) == 0 && !input_select.is_empty() {
-        return Err("input selection given but no input field bits set");
-    }
-    if (inout_fields & TXFS_INPUTS_ALL) != 0 && input_select.is_empty() {
-        return Err("no input selection given but some input field bits set");
-    }
 
     if commit_number_inputs {
         (tx.input.len() as u32).consensus_encode(&mut engine).unwrap();
@@ -355,21 +329,11 @@ pub fn calculate_txhash(
 
     // Outputs
     if bytes.peek().is_none() {
-        if (inout_fields & TXFS_OUTPUTS_ALL) != 0 {
-            return Err("some output field bits set, but no outputs selected");
-        }
     } else {
         let allow_empty = (inout_fields & TXFS_OUTPUTS_ALL) == 0;
         let (selection, commit_number) = parse_inout_selection(
             &mut bytes, tx.output.len(), current_input_idx, allow_empty,
         )?;
-
-        if (inout_fields & TXFS_OUTPUTS_ALL) == 0 && !selection.is_empty() {
-            return Err("no output field bits set, but output selection provided");
-        }
-        if (inout_fields & TXFS_OUTPUTS_ALL) != 0 && selection.is_empty() {
-            return Err("output field bits set, but no output selection provided");
-        }
 
         if commit_number {
             (tx.output.len() as u32).consensus_encode(&mut engine).unwrap();
@@ -398,7 +362,9 @@ pub fn calculate_txhash(
         }
     }
 
-    assert!(bytes.next().is_none(), "unused txfs bytes");
+    if bytes.next().is_some() {
+        return Err("unused txfs bytes");
+    }
     Ok(sha256::Hash::from_engine(engine))
 }
 

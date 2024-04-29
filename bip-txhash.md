@@ -280,7 +280,7 @@ bf ff c2 01 03 83
   future addition of byte manipulation opcodes like `OP_CAT`, an additional
   cost is specified per TransactionHash execution. Using the same validation
   budget ("sigops budget") introduced in BIP-0342, each TransactionHash
-  decreases the validation budget by 15. If this brings the budget below zero,
+  decreases the validation budget by 25. If this brings the budget below zero,
   the script fails immediately.<br>The following considerations should be made:
   * All fields that can be of arbitrary size are cachable as TransactionHash
     always hashes their hashed values.

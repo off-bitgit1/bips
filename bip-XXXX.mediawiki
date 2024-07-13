@@ -139,6 +139,15 @@ Request funds to be paid over lightning to a BOLT 11 invoice with no fallback:
 Request funds to be paid over lightning to a BOLT 12 offer with no fallback:
  bitcoin:?lno=lno1bogusoffer
 
+Request funds to be paid over lightning to a BOLT 12 offer or silent payments address with no fallback:
+ bitcoin:?lno=lno1bogusoffer&sp=sp1qsilentpayment
+
+Request funds to be paid to a silent payments address with no fallback:
+ bitcoin:?sp=sp1qsilentpayment
+
+Request funds to be paid to a silent payments address with a fallback:
+ bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?sp=sp1qsilentpayment
+
 Some future version that has variables which are (currently) not understood and required and thus invalid:
  bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?req-somethingyoudontunderstand=50&req-somethingelseyoudontget=999
 

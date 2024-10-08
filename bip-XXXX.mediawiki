@@ -17,7 +17,7 @@ This BIP proposes a URI scheme for describing Bitcoin payment receipt informatio
 ==Motivation==
 The purpose of this URI scheme is to enable users to easily make payments by simply clicking links on webpages or scanning QR Codes.
 
-This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs as well as provide forward-looking guidance on how to incorporate new payment instructions. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
+This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs as well as provide forward-looking guidance on how to incorporate new payment instructions. It further adds an optional extension to provide the payment initiator with proof of payment. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
 
 ==Specification==
 
@@ -42,10 +42,11 @@ Elements of the query component may contain characters outside the valid range. 
  bitcoinurn     = "bitcoin:" [ bitcoinaddress ] [ "?" bitcoinparams ]
  bitcoinaddress = *base58 / *bech32 / *bech32m
  bitcoinparams  = bitcoinparam [ "&" bitcoinparams ]
- bitcoinparam   = [ amountparam / labelparam / messageparam / otherparam / reqparam ]
+ bitcoinparam   = [ amountparam / labelparam / messageparam / responseparam / otherparam / reqparam ]
  amountparam    = "amount=" *digit [ "." *digit ]
  labelparam     = "label=" *qchar
  messageparam   = "message=" *qchar
+ responseparam  = [ "req-" ] "pop=" *qchar
  otherparam     = qchar *qchar [ "=" *qchar ]
  reqparam       = "req-" qchar *qchar [ "=" *qchar ]
 
@@ -64,6 +65,7 @@ The following keys are defined generally and apply to any URI regardless of paym
 *label: Label for that address (e.g. name of receiver)
 *address: bitcoin address
 *message: message that describes the transaction to the user ([[#Examples|see examples below]])
+*pop: a URI which the Bitcoin Wallet may return to in order to provide the application which initiated the payment with proof that a payment was completed.
 
 The following keys are currently defined for payment instructions of various forms:
 
@@ -78,6 +80,20 @@ New payment instructions using bech32 or bech32m encodings SHOULD reuse their ad
 If an amount is provided, it MUST be specified in decimal BTC.
 All amounts MUST contain no commas and use a period (.) as the separating character to separate whole numbers and decimal fractions.
 I.e. amount=50.00 or amount=50 is treated as 50 BTC, and amount=50,000.00 is invalid.
+
+=== Proof of Payment ===
+
+The URI MAY include a "pop" (or "req-pop") parameter who's value can be used to build a URI which the wallet application can, after payment completes, "open" to provide proof the payment was completed or other information about the payment.
+
+The value of a "pop" (or "req-pop") parameter shall be a percent-encoded (per RFC 3986 section 2.1) URI prefix. The wallet application, if it supports providing payment information SHOULD first percent-decode the provided URI once, append "&pop=" followed by the Payment Information to the resulting URI and open it with the default system handler for the given URI.
+
+A wallet MUST validate that the provided URI's scheme is not (case-insensitive) "http", "https", "file", "javascript", "mailto" or any other scheme which will open in a web browser prior to opening it.
+
+If a wallet will not open the pop scheme (either because it does not support returning payment information for the selected payment method or because it uses a URI scheme which should not be opened) and the parameter was passed as a "req-pop" parameter, the wallet MUST NOT initiate payment.
+
+For payments made using an on-chain transaction, the Payment Information shall be the full (including witness data) Bitcoin transaction as it was broadcasted to the Bitcoin network, encoded in hex.
+
+Other payment schemes will define their own Payment Information format. This BIP may be updated from time to time with Payment Information formats for other payment schemes.
 
 == Rationale ==
 
@@ -96,6 +112,12 @@ As this BIP is written, several clients already implement a bitcoin: URI scheme 
 Compared to BIP 21, this document describes standard query parameters containing payment instructions, allows bech32 and bech32m `bitcoinaddress` fields, and allow for future URIs with an empty `bitcoinaddress` field. Use of bech32 and bech32m `bitcoinaddress` fields were long-since common practice in 2024, and the `lightning` query parameter storing BOLT 11 payment instructions became common practice in the year or three leading up to 2024. Inclusion of standard query parameters was added to provide guidance on query parameter usage going forward.
 
 Any existing BIP 21 implementation should automatically be fully compliant with this BIP, as the changes only describe existing practice or impact future address format inclusion.
+
+== Proof of Payment ==
+
+On many mobile operating systems (especially, or any operating system more generally), applications may "open" a bitcoin: URI in order to initiate a payment with the user's default wallet application. These payment-initiating applications may wish to learn about the completed payment.
+
+For payments completed on-chain, this is largely addressed by having the payment-initiating application monitor the blockchain for payment completion, however for other payment schemes (e.g. lightning), no such global ledger of transactions exists. In that case, proof of payment must be provided via some other mechanism.
 
 == Appendix ==
 

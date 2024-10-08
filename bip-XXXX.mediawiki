@@ -5,18 +5,19 @@
   Author: Matt Corallo <bip21@bluematt.me>
   Comments-Summary: No comments yet.
   Comments-URI: https://github.com/bitcoin/bips/wiki/Comments:BIP-XXXX
-  Status: Proposed
+  Status: Draft
   Type: Standards Track
   Created: 2024-07-13
+  License: BSD-2-Clause
 </pre>
 
-This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs as well as provide forward-looking guidance on how to incorporate new payment instructions. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
-
 ==Abstract==
-This BIP proposes a URI scheme for making Bitcoin payments.
+This BIP proposes a URI scheme for describing Bitcoin payment receipt information.
 
 ==Motivation==
 The purpose of this URI scheme is to enable users to easily make payments by simply clicking links on webpages or scanning QR Codes.
+
+This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs as well as provide forward-looking guidance on how to incorporate new payment instructions. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
 
 ==Specification==
 
@@ -78,20 +79,11 @@ If an amount is provided, it MUST be specified in decimal BTC.
 All amounts MUST contain no commas and use a period (.) as the separating character to separate whole numbers and decimal fractions.
 I.e. amount=50.00 or amount=50 is treated as 50 BTC, and amount=50,000.00 is invalid.
 
-Bitcoin clients MAY display the amount in any format that is not intended to deceive the user.
-They SHOULD choose a format that is foremost least confusing, and only after that most reasonable given the amount requested.
-For example, so long as the majority of users work in BTC units, values should always be displayed in BTC by default, even if mBTC or TBC would otherwise be a more logical interpretation of the amount.
 == Rationale ==
 
 ===Payment identifiers, not person identifiers===
 Best practices are that a unique address should be used for every transaction on-chain.
 Therefore, a URI which contains an on-chain payment address MUST NOT represent an exchange of personal information, but a one-time payment instruction. URIs which represent only reusable non-address-reusing payment instructions (like Lightning BOLT12 offers or Silent Payments) MAY be reused as a wallet sees fit.
-
-===Accessibility (URI scheme name)===
-Should someone from the outside happen to see such a URI, the URI scheme name already gives a description.
-A quick search should then do the rest to help them find the resources needed to make their payment.
-Other proposed names sound much more cryptic; the chance that someone googles that out of curiosity are much slimmer.
-Also, very likely, what he will find are mostly technical specifications - not the best introduction to bitcoin.
 
 ==Forward compatibility==
 Variables which are prefixed with a req- are considered required.  If a client does not implement any variables which are prefixed with req-, it MUST consider the entire URI invalid.  Any other variables which are not implemented, but which are not prefixed with a req-, can be safely ignored.

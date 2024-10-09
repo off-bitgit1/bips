@@ -37,8 +37,6 @@ Elements of the query component may contain characters outside the valid range. 
 
 === ABNF grammar ===
 
-(See also [[#Simpler syntax|a simpler representation of syntax]])
-
  bitcoinurn     = "bitcoin:" [ bitcoinaddress ] [ "?" bitcoinparams ]
  bitcoinaddress = *base58 / *bech32 / *bech32m
  bitcoinparams  = bitcoinparam [ "&" bitcoinparams ]

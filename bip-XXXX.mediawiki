@@ -17,7 +17,7 @@ This BIP proposes a URI scheme for describing Bitcoin payment receipt informatio
 ==Motivation==
 The purpose of this URI scheme is to enable users to easily make payments by simply clicking links on webpages or scanning QR Codes.
 
-This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs as well as provide forward-looking guidance on how to incorporate new payment instructions. It further adds an optional extension to provide the payment initiator with proof of payment. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
+This BIP is a modification of [[bip-0021.mediawiki|BIP 0021]] to add information about the modern usage of bitcoin: URIs (including standard query parameters and modern address types) as well as provide forward-looking guidance on how to incorporate new payment instructions. It further adds an optional extension to provide the payment initiator with proof of payment. BIP 21 was based on BIP 20, which was, in turn based off an earlier document by Nils Schneider.
 
 ==Specification==
 
@@ -104,12 +104,14 @@ Therefore, a URI which contains an on-chain payment address MUST NOT represent a
 ==Forward compatibility==
 Variables which are prefixed with a req- are considered required.  If a client does not implement any variables which are prefixed with req-, it MUST consider the entire URI invalid.  Any other variables which are not implemented, but which are not prefixed with a req-, can be safely ignored.
 
-As future new address types should be added using query parameters rather than the `bitcoinaddress` field, URIs can seamlessly support many payment instructions while senders only support legacy instructions. This allows for senders to be able to pay newer recipients while still allowing the use of more modern payment instruction formats.
+As future new address types should be added using query parameters rather than the `bitcoinaddress` field, URIs seamlessly support various payment instructions while senders only need to support legacy instructions. This allows old senders to pay newer recipients which offer more modern payment instruction formats.
 
 ==Backward compatibility==
 As this BIP is written, several clients already implement a bitcoin: URI scheme similar to this one, however usually without the additional "req-" prefix requirement.  Thus, it is recommended that additional variables prefixed with req- not be used in a mission-critical way until a grace period of 6 months from the finalization of this BIP has passed in order to allow client developers to release new versions, and users of old clients to upgrade.
 
-Compared to BIP 21, this document describes standard query parameters containing payment instructions, allows bech32 and bech32m `bitcoinaddress` fields, and allow for future URIs with an empty `bitcoinaddress` field. Use of bech32 and bech32m `bitcoinaddress` fields were long-since common practice in 2024, and the `lightning` query parameter storing BOLT 11 payment instructions became common practice in the year or three leading up to 2024. Inclusion of standard query parameters was added to provide guidance on query parameter usage going forward.
+Compared to BIP 21, this document describes standard query parameters containing payment instructions, allows bech32 and bech32m `bitcoinaddress` fields, and allows for URIs with an empty `bitcoinaddress` field. Use of bech32 and bech32m `bitcoinaddress` fields were long-since common practice in 2024, and the `lightning` query parameter storing BOLT 11 payment instructions became common practice in the year or three leading up to 2024. Inclusion of standard query parameters was added to provide guidance on query parameter usage going forward.
+
+Additionally, this BIP describes the "pop" query parameter, which was unused and will be ignored by BIP 21 implementations.
 
 Any existing BIP 21 implementation should automatically be fully compliant with this BIP, as the changes only describe existing practice or impact future address format inclusion.
 
@@ -124,7 +126,7 @@ For payments completed on-chain, this is largely addressed by having the payment
 === Simpler syntax ===
 
 This section is non-normative and does not cover all possible syntax.
-Please see the BNF grammar above for the normative syntax.
+Please see the ABNF grammar above for the normative syntax.
 
 [foo] means optional, &lt;bar&gt; are placeholders
 
@@ -169,12 +171,3 @@ Some future version that has variables which are (currently) not understood but 
  bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?somethingyoudontunderstand=50&somethingelseyoudontget=999
 
 Characters must be URI encoded properly.
-
-== Reference Implementations ==
-=== Bitcoin clients ===
-* Bitcoin-Qt supports the old version of Bitcoin URIs (ie without the req- prefix), with Windows and KDE integration as of commit 70f55355e29c8e45b607e782c5d76609d23cc858.
-
-=== Libraries ===
-* Javascript - https://github.com/bitcoinjs/bip21
-* Java - https://github.com/SandroMachado/BitcoinPaymentURI
-* Swift - https://github.com/SandroMachado/BitcoinPaymentURISwift

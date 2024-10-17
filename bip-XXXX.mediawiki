@@ -91,6 +91,8 @@ If a wallet will not open the pop scheme (either because it does not support ret
 
 For payments made using an on-chain transaction, the Payment Information shall be the full (including witness data) Bitcoin transaction as it was broadcasted to the Bitcoin network, encoded in hex.
 
+For payments made using a BOLT 11 invoice (communicated via the `lightning` parameter), the Payment Information shall be the hex-encoded payment preimage.
+
 Other payment schemes will define their own Payment Information format. This BIP may be updated from time to time with Payment Information formats for other payment schemes.
 
 == Rationale ==

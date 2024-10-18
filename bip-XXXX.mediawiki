@@ -83,7 +83,7 @@ I.e. amount=50.00 or amount=50 is treated as 50 BTC, and amount=50,000.00 is inv
 
 The URI MAY include a "pop" (or "req-pop") parameter who's value can be used to build a URI which the wallet application can, after payment completes, "open" to provide proof the payment was completed or other information about the payment.
 
-The value of a "pop" (or "req-pop") parameter shall be a percent-encoded (per RFC 3986 section 2.1) URI prefix. The wallet application, if it supports providing payment information SHOULD percent-decode the provided URI once then append the Payment Information to the resulting URI and open it with the default system handler for the given URI.
+The value of a "pop" (or "req-pop") parameter shall be a percent-encoded (per RFC 3986 section 2.1) URI prefix. The wallet application, if it supports providing payment information SHOULD percent-decode the provided URI once, append the query parameter key from which the payment instructions used were read, append a single =, and finally append the Payment Information to the resulting URI and open it with the default system handler for the URI. For payment instructions read from the body of the URI, "onchain" SHALL be used in place of the key.
 
 A wallet MUST validate that the provided URI's scheme is not (case-insensitive) "http", "https", "file", "javascript", "mailto" or any other scheme which will open in a web browser prior to opening it.
 
@@ -134,6 +134,8 @@ Please see the ABNF grammar above for the normative syntax.
 
 === Examples ===
 
+==== URIs ====
+
 Just the address:
  bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W
 
@@ -171,3 +173,30 @@ Some future version that has variables which are (currently) not understood but 
  bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?somethingyoudontunderstand=50&somethingelseyoudontget=999
 
 Characters must be URI encoded properly.
+
+==== Proof of Payment ====
+
+If the original URI is
+ bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?pop=initiatingapp%3a
+the wallet should perform the payment information callback by opening
+ initiatingapp:onchain=$HEX_ENCODED_TRANSACTION
+
+If the original URI is
+ bitcoin:?lightning=lnbc420bogusinvoice&pop=callbackuri%3abody%3fpop=
+the wallet should perform the proof-of-payment callback by opening
+ callbackuri:body?pop=lightning=$HEX_ENCODED_PAYMENT_PREIMAGE
+
+If the original URI is
+ bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?lightning=lnbc420bogusinvoice&pop=app%3a%3f
+and the wallet pays on-chain, it should perform the payment information callback by opening
+ app:?onchain=$HEX_ENCODED_TRANSACTION
+but if the app pays using lightning, it should perform the proof-of-payment callback by opening
+ app:?lightning=$HEX_ENCODED_PAYMENT_PREIMAGE
+
+If the original URI is
+ bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?pop=https%3aiwantyouripaddress.com
+the wallet should make a payment as it normally would but MUST NOT interact with iwantyouripaddress.com
+
+If the original URI is
+ bitcoin:175tWpb8K1S7NmH4Zx6rewF9WQrcZv245W?req-pop=https%3aevilwebsite.com
+the wallet MUST NOT make a payment

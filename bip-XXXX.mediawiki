@@ -69,7 +69,8 @@ The following keys are currently defined for payment instructions of various for
 
 *lightning: Lightning BOLT 11 invoices
 *lno: Lightning BOLT12 offers
-*sp: Silent Payment addresses
+*pay: [[bip-0351.mediawiki|BIP 351 Private Payment addresses]]
+*sp: [[bip-0352.mediawiki|BIP 352 Silent Payment addresses]]
 
 New payment instructions using bech32 or bech32m encodings SHOULD reuse their address format's Human Readable Part as the parameter key.
 
